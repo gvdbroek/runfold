@@ -1,0 +1,1 @@
+print("I am a cow and I like walking")
