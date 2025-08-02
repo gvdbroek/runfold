@@ -9,7 +9,7 @@ CLI_PATHS = [
 
 
 def is_split(p:pathlib.Path)->bool:
-    return str(p).endswith(".split")
+    return str(p).endswith(".route")
 
 def is_command(p:str)->bool:
     if str(p).endswith('.command'):
@@ -24,7 +24,7 @@ def get_all_commands(directory:pathlib.Path):
         if os.path.isdir(p):
             if is_split(p):
                 sub_commands = get_all_commands(p)
-                name = p.parts[-1].replace('.split', '')
+                name = p.parts[-1].replace('.route', '')
                 dct[name] = sub_commands
         if is_command(p):
             name = p.parts[-1].replace('.command', '')
@@ -45,20 +45,21 @@ def get_command_tree():
 def get_command(args: list[str]):
     command_tree = get_command_tree()
     
-    for arg in args:
+    for i, arg in enumerate(args):
         command_tree = command_tree.get(arg, None)
         if not command_tree:
             print("No subcommand found %s in %s" % (arg, args))
-            return None
+            return None, None
 
         if isinstance(command_tree, pathlib.Path):
-            return command_tree
+            overflow = args[i+1:]
+            return command_tree, overflow
             
     else:
         print("No such commmand in %s" % args)
-        return None
+        return None, None
 
-def exec_command(folder: Path):
+def exec_command(folder: Path, args):
     assert isinstance(folder, Path)
     # print("Executing: %s" % folder)
     contents = os.listdir(folder)
@@ -72,7 +73,7 @@ def exec_command(folder: Path):
     if cmd_type == ".sh":
         subprocess.call(['sh', cmd_path])
     if cmd_type == '.py':
-        subprocess.call(['python', cmd_path])
+        subprocess.call(['python', cmd_path, *args])
 
 
     # print(cmd_path)
@@ -80,10 +81,10 @@ def exec_command(folder: Path):
 def main():
     args = list(sys.argv)
     arg_paths = args[1:]
-    cmd = get_command(arg_paths)
+    cmd, overflow_args = get_command(arg_paths)
     if not cmd:
         return
-    exec_command(cmd)
+    exec_command(cmd, overflow_args)
     
 
 
